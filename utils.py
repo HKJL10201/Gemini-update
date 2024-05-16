@@ -1,8 +1,9 @@
 import numpy as np
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn.metrics import auc, roc_curve
-from graphnnSiamese import graphnn
+# from graphnnSiamese import graphnn
 import json
+
 
 def get_f_name(DATA, SF, CM, OP, VS):
     F_NAME = []
@@ -26,8 +27,9 @@ def get_f_dict(F_NAME):
                     name_num += 1
     return name_dict
 
+
 class graph(object):
-    def __init__(self, node_num = 0, label = None, name = None):
+    def __init__(self, node_num=0, label=None, name=None):
         self.node_num = node_num
         self.label = label
         self.name = name
@@ -39,13 +41,13 @@ class graph(object):
                 self.features.append([])
                 self.succs.append([])
                 self.preds.append([])
-                
-    def add_node(self, feature = []):
+
+    def add_node(self, feature=[]):
         self.node_num += 1
         self.features.append(feature)
         self.succs.append([])
         self.preds.append([])
-        
+
     def add_edge(self, u, v):
         self.succs[u].append(v)
         self.preds[v].append(u)
@@ -61,7 +63,7 @@ class graph(object):
             ret += '\n'
         return ret
 
-        
+
 def read_graph(F_NAME, FUNC_NAME_DICT, FEATURE_DIM):
     graphs = []
     classes = []
@@ -108,7 +110,7 @@ def partition_data(Gs, classes, partitions, perm):
     return ret
 
 
-def generate_epoch_pair(Gs, classes, M, output_id = False, load_id = None):
+def generate_epoch_pair(Gs, classes, M, output_id=False, load_id=None):
     epoch_data = []
     id_data = []   # [ ([(G0,G1),(G0,G1), ...], [(G0,H0),(G0,H0), ...]), ... ]
 
@@ -117,17 +119,17 @@ def generate_epoch_pair(Gs, classes, M, output_id = False, load_id = None):
         while st < len(Gs):
             if output_id:
                 X1, X2, m1, m2, y, pos_id, neg_id = get_pair(Gs, classes,
-                        M, st=st, output_id=True)
-                id_data.append( (pos_id, neg_id) )
+                                                             M, st=st, output_id=True)
+                id_data.append((pos_id, neg_id))
             else:
                 X1, X2, m1, m2, y = get_pair(Gs, classes, M, st=st)
-            epoch_data.append( (X1,X2,m1,m2,y) )
+            epoch_data.append((X1, X2, m1, m2, y))
             st += M
-    else:   ## Load from previous id data
+    else:  # Load from previous id data
         id_data = load_id
         for id_pair in id_data:
             X1, X2, m1, m2, y = get_pair(Gs, classes, M, load_id=id_pair)
-            epoch_data.append( (X1, X2, m1, m2, y) )
+            epoch_data.append((X1, X2, m1, m2, y))
 
     if output_id:
         return epoch_data, id_data
@@ -135,7 +137,7 @@ def generate_epoch_pair(Gs, classes, M, output_id = False, load_id = None):
         return epoch_data
 
 
-def get_pair(Gs, classes, M, st = -1, output_id = False, load_id = None):
+def get_pair(Gs, classes, M, st=-1, output_id=False, load_id=None):
     if load_id is None:
         C = len(classes)
 
@@ -143,8 +145,8 @@ def get_pair(Gs, classes, M, st = -1, output_id = False, load_id = None):
             M = len(Gs) - st
         ed = st + M
 
-        pos_ids = [] # [(G_0, G_1)]
-        neg_ids = [] # [(G_0, H_0)]
+        pos_ids = []  # [(G_0, G_1)]
+        neg_ids = []  # [(G_0, H_0)]
 
         for g_id in range(st, ed):
             g0 = Gs[g_id]
@@ -154,7 +156,7 @@ def get_pair(Gs, classes, M, st = -1, output_id = False, load_id = None):
                 g1_id = classes[cls][np.random.randint(tot_g)]
                 while g_id == g1_id:
                     g1_id = classes[cls][np.random.randint(tot_g)]
-                pos_ids.append( (g_id, g1_id) )
+                pos_ids.append((g_id, g1_id))
 
             cls2 = np.random.randint(C)
             while (len(classes[cls2]) == 0) or (cls2 == cls):
@@ -162,11 +164,11 @@ def get_pair(Gs, classes, M, st = -1, output_id = False, load_id = None):
 
             tot_g2 = len(classes[cls2])
             h_id = classes[cls2][np.random.randint(tot_g2)]
-            neg_ids.append( (g_id, h_id) )
+            neg_ids.append((g_id, h_id))
     else:
         pos_ids = load_id[0]
         neg_ids = load_id[1]
-        
+
     M_pos = len(pos_ids)
     M_neg = len(neg_ids)
     M = M_pos + M_neg
@@ -186,36 +188,36 @@ def get_pair(Gs, classes, M, st = -1, output_id = False, load_id = None):
     node1_mask = np.zeros((M, maxN1, maxN1))
     node2_mask = np.zeros((M, maxN2, maxN2))
     y_input = np.zeros((M))
-    
+
     for i in range(M_pos):
         y_input[i] = 1
         g1 = Gs[pos_ids[i][0]]
         g2 = Gs[pos_ids[i][1]]
         for u in range(g1.node_num):
-            X1_input[i, u, :] = np.array( g1.features[u] )
+            X1_input[i, u, :] = np.array(g1.features[u])
             for v in g1.succs[u]:
                 node1_mask[i, u, v] = 1
         for u in range(g2.node_num):
-            X2_input[i, u, :] = np.array( g2.features[u] )
+            X2_input[i, u, :] = np.array(g2.features[u])
             for v in g2.succs[u]:
                 node2_mask[i, u, v] = 1
-        
+
     for i in range(M_pos, M_pos + M_neg):
         y_input[i] = -1
         g1 = Gs[neg_ids[i-M_pos][0]]
         g2 = Gs[neg_ids[i-M_pos][1]]
         for u in range(g1.node_num):
-            X1_input[i, u, :] = np.array( g1.features[u] )
+            X1_input[i, u, :] = np.array(g1.features[u])
             for v in g1.succs[u]:
                 node1_mask[i, u, v] = 1
         for u in range(g2.node_num):
-            X2_input[i, u, :] = np.array( g2.features[u] )
+            X2_input[i, u, :] = np.array(g2.features[u])
             for v in g2.succs[u]:
                 node2_mask[i, u, v] = 1
     if output_id:
-        return X1_input,X2_input,node1_mask,node2_mask,y_input,pos_ids,neg_ids
+        return X1_input, X2_input, node1_mask, node2_mask, y_input, pos_ids, neg_ids
     else:
-        return X1_input,X2_input,node1_mask,node2_mask,y_input
+        return X1_input, X2_input, node1_mask, node2_mask, y_input
 
 
 def train_epoch(model, graphs, classes, batch_size, load_data=None):
@@ -224,7 +226,7 @@ def train_epoch(model, graphs, classes, batch_size, load_data=None):
     else:
         epoch_data = load_data
 
-    perm = np.random.permutation(len(epoch_data))   #Random shuffle
+    perm = np.random.permutation(len(epoch_data))  # Random shuffle
 
     cum_loss = 0.0
     for index in perm:
@@ -241,19 +243,17 @@ def get_auc_epoch(model, graphs, classes, batch_size, load_data=None):
     tot_truth = []
 
     if load_data is None:
-        epoch_data= generate_epoch_pair(graphs, classes, batch_size)
+        epoch_data = generate_epoch_pair(graphs, classes, batch_size)
     else:
         epoch_data = load_data
 
-
     for cur_data in epoch_data:
-        X1, X2, m1, m2,y  = cur_data
+        X1, X2, m1, m2, y = cur_data
         diff = model.calc_diff(X1, X2, m1, m2)
     #    print diff
 
         tot_diff += list(diff)
         tot_truth += list(y > 0)
-
 
     diff = np.array(tot_diff)
     truth = np.array(tot_truth)

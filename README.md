@@ -1,3 +1,12 @@
+# Gemini Update
+
+An updated version of [Gemini](https://github.com/xiaojunxu/dnn-binary-code-similarity).
+
+New features:
+- Now support Python 3.
+
+# Original README
+
 # DNN Binary Code Similarity Detection
 This repo provides an implementation of the Gemini network for binary code similarity detection in [this paper](https://arxiv.org/abs/1708.06525).
 
