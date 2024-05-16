@@ -4,6 +4,7 @@ An updated version of [Gemini](https://github.com/xiaojunxu/dnn-binary-code-simi
 
 New features:
 - Now support Python 3.
+- Now support Tensorflow 2.
 
 # Original README
 

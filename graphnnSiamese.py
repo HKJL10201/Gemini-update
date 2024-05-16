@@ -1,7 +1,9 @@
-import tensorflow as tf
+import datetime
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+# import tensorflow as tf
 # import matplotlib.pyplot as plt
 # import numpy as np
-import datetime
 # from sklearn.metrics import roc_auc_score
 
 
